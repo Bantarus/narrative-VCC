@@ -1,77 +1,199 @@
 （this readme is written by human）
 
-# VCC: View-oriented Conversation Compiler
+# VCC-Narrative: View-oriented Conversation Compiler for Narrative Branch Trees
 
 [English](README.md) | [简体中文](README_cn.md) | [日本語](README_jp.md)
 
-Official implementation of "View-oriented Conversation Compiler for Agent Trace Analysis" ([Paper](https://arxiv.org/abs/2603.29678))
+A fork of [VCC](https://github.com/lllyasviel/VCC) ("View-oriented Conversation Compiler for Agent Trace Analysis" - [Paper](https://arxiv.org/abs/2603.29678)) repurposed for **narrative branch trees in games** — RPGs, visual novels, interactive fiction, or any genre with branching storylines.
 
-This repo is for daily use. To reproduce academic experiments in the paper, see [VCC-experiments](https://github.com/lllyasviel/VCC-experiments).
+The upstream VCC compiles Claude Code JSONL logs into structured, searchable views with stable cross-view line-number pointers. This fork replaces Claude Code conversation logs with custom narrative JSONL nodes, giving you lossless recall of branching story paths, NPC state, world flags, and narrative agent continuity memos.
 
-VCC is a compiler that compiles your conversation logs (Claude Code's JSONL) into efficient and agent-friendly views. Then you will never fear Claude Code's `/compact` - CC now can finally see the original details of compacted context. It also supports searching across all your Claude Code conversations.
+The upstream compiler core (`skills/conversation-compiler/`) is untouched. All narrative-specific code lives in `narrative/`.
 
-Things that tend to happen after you install VCC:
+# Narrative Tree Structure
 
-- You find out that if you installed this earlier, you can save lots of money that you would need to waste for struggling with CC's `/compact`.
-- `/compact` + `/recall` becomes your favorite combo.
-- You start wondering why this wasn't built in CC.
-- You delete your multi-layer RAG memory system, your self-evolving agent skill memory, and 15 other AGI inventions - if you really have those...
+A narrative tree lives in a directory (default: `./tree`) with this layout:
 
-There is also a [paper](https://arxiv.org/abs/2603.29678) showing that VCC improves context learning and agent trace analysis and harness on some academic benchmark.
+```
+tree/
+├── edges.json          ← parent/child relationships between nodes
+└── nodes/
+    ├── act1_root.jsonl
+    ├── act1_fork_a.jsonl
+    ├── act1_fork_b.jsonl
+    └── act1_fork_b_1.jsonl
+```
+
+`edges.json` defines the tree topology:
+
+```json
+{
+  "act1_root":     { "parent": null },
+  "act1_fork_a":   { "parent": "act1_root",   "via_choice": "Apologize" },
+  "act1_fork_b":   { "parent": "act1_root",   "via_choice": "Threaten" },
+  "act1_fork_b_1": { "parent": "act1_fork_b", "via_choice": "Flee" }
+}
+```
+
+Each node is a `.jsonl` file where every line is one record. Supported record types:
+
+| Type | Purpose |
+|------|---------|
+| `scene` | Scene-setting narrative text |
+| `npc_dialogue` | NPC speech with speaker and disposition |
+| `player_choice` | Decision point with options and chosen action |
+| `consequence` | World reaction to a choice |
+| `world_state` | Flag mutations and deltas |
+| `arc_note` | Narrative agent continuity memo (rendered like VCC thinking blocks) |
+| `branch_point` | Marks child edges from this node |
+
+Example records:
+
+```jsonl
+{"type":"scene","id":"s001","content":"The tavern falls silent as you enter.","tags":["loc:crow_tavern","time:night","arc:act1"]}
+{"type":"npc_dialogue","id":"d001","speaker":"Marcus","content":"You shouldn't be here.","disposition":"hostile","tags":["npc:marcus","arc:marcus_conflict"]}
+{"type":"player_choice","id":"c001","prompt":"How do you respond?","options":["Apologize","Threaten","Leave"],"chosen":"Threaten","tags":["choice:confrontation"]}
+{"type":"world_state","id":"w001","flags":{"marcus_disposition":"hostile","thieves_guild_rep":15},"delta":{"thieves_guild_rep":"+5","marcus_disposition":"neutral→hostile"}}
+{"type":"arc_note","id":"a001","content":"Marcus was neutral in prologue. Disposition flip here.","author":"narrative_agent","tags":["npc:marcus","continuity"]}
+```
+
+Junk types (`_agent_heartbeat`, `_debug_trace`, `_scaffold`, `_llm_meta`) are silently dropped by the lexer.
 
 # Install
 
-Currently We support Claude Code only. Codex and OpenClaw are coming soon.
+## Narrative skills (this fork)
 
-To install, copy this to your Claude Code:
+Requires Python 3.10+ and [uv](https://docs.astral.sh/uv/).
 
-    Please help me install the skills from 
-    https://github.com/lllyasviel/VCC.git 
-    just clone it then follow the INSTALL.md
+```bash
+git clone https://github.com/YOUR_USER/narrative-VCC.git
+cd narrative-VCC
+uv sync
+```
 
-To update, copy this to your Claude Code:
+To install the Claude Code skills, copy the skill folders into your project:
 
-    Please help me update the skills from
-    https://github.com/lllyasviel/VCC.git
-    just clone it then follow the INSTALL.md
+    Please help me install the skills from
+    /path/to/narrative-VCC
+    just follow the INSTALL.md
 
-To uninstall, copy this to your Claude Code:
+## Upstream VCC skills
 
-    Please help me uninstall VCC skills by deleting
-    `conversation-compiler`, `readchat`, `recall`, `searchchat`
-    from my `.claude/skills`
+The original VCC skills (`conversation-compiler`, `readchat`, `recall`, `searchchat`) are included and work unchanged. See the [upstream VCC repo](https://github.com/lllyasviel/VCC) for details.
 
-Restart Claude Code after install, update, or uninstall.
+# CLI Usage
 
-# Basic Usage
+```bash
+# Recall ancestor chain context for a node
+python cli.py recall --node act1_fork_b_1 --view full
 
-When a compact is triggered (whether automaticaly or manually), you can immediately `/recall`.
+# Recall with tag-based filtering
+python cli.py recall --node act1_fork_b_1 --grep npc:marcus --view adaptive
 
-For example, after an automatic compact or manual `/compact`, you will see somthing like `(... compacted)`. You can then:
+# Recall continuity snapshot (arc_notes + world_state, the default)
+python cli.py recall --node act1_fork_b_1
+
+# Search across ALL nodes in the tree
+python cli.py search --tree ./tree --grep continuity
+
+# Create a new branch from a node
+python cli.py branch --node act1_fork_b_1 --choice "Hide in shadows"
+
+# Inspect raw JSONL with line numbers
+python cli.py inspect --node act1_fork_b
+```
+
+Environment variables (overridable by CLI flags):
+- `NARRATIVE_TREE_ROOT` — default `./tree`
+- `CURRENT_NODE` — current node for recall/branch
+
+## Tag Query Syntax
+
+| Pattern | Matches |
+|---------|---------|
+| `npc:marcus` | Exact tag match |
+| `arc:marcus_conflict` | Exact tag match |
+| `choice:` | Prefix match (all choice tags) |
+| `continuity` | Bare tag match |
+| `tavern` | Substring match on content (VCC-compatible grep fallback) |
+
+Multiple `--grep` flags compose with AND: `--grep npc:marcus --grep continuity` matches blocks tagged with both.
+
+# Claude Code Skills
+
+Three narrative-specific slash commands:
+
+### `/narrative-recall [query]`
+
+Compiles and displays the ancestor chain for the current node. Without a query, shows a lightweight continuity snapshot (arc_notes + world_state).
+
+```
+/narrative-recall                      # continuity snapshot
+/narrative-recall npc:marcus           # all marcus-tagged blocks
+/narrative-recall continuity           # all continuity memos
+```
+
+### `/narrative-branch [choice_label]`
+
+Creates a new child node branching from the current node. Scaffolds a JSONL file with a scene block and an arc_note carrying forward world state.
+
+```
+/narrative-branch "Threaten Marcus"
+```
+
+### `/narrative-search [query]`
+
+Searches across ALL nodes in the tree (not just the current path). Returns a transposed view sorted by depth.
+
+```
+/narrative-search npc:marcus
+/narrative-search "marcus_disposition"
+```
+
+## Upstream VCC Usage
+
+The original VCC skills (`/recall`, `/searchchat`, `/readchat`) still work for Claude Code conversation logs:
 
 `/recall`
 
-and CC will recall everything automatically, or you can
-
-`/recall let's review our conversation`
-
-`/recall in those six rounds of analysis we just did, which access attempt causes the second layer of the server's three-layer log to crash?`
-
-`/recall go through all six details I mentioned about the user survey again`
-
-`/recall review my thought process so far`
-
-For new conversations, you can use `/searchchat` or `/recall` (which will fallback to search). For example:
-
 `/searchchat how did we handle the captcha in that browser listener system we discussed last time?`
-
-`/recall did we decide to use React for that canvas solution we discussed last time?`
-
-These commands can find and recover the orginal chats accross months of conversation history.
 
 `/readchat` is for advanced usage, see below.
 
 # How It Works
+
+## Narrative Pipeline
+
+The narrative compiler extends VCC's pipeline without modifying it:
+
+```
+edges.json + nodes/*.jsonl
+        │
+        ▼
+  PathResolver        ← walks edges.json from target to root, emits annotated stream
+        │
+        ▼
+  NarrativeLexer      ← drops junk types, emits LexTokens
+        │
+        ▼
+  NarrativeParser     ← converts LexTokens into VCC-compatible IR dicts
+        │
+        ▼
+  VCC assign_lines    ← stable line numbers (upstream, untouched)
+        │
+        ▼
+  VCC lower / emit    ← view rendering (upstream, untouched)
+```
+
+The parser produces IR nodes with the same structure VCC expects (`type`, `content`, `searchable`, `_sec`, `_blk`), so the entire downstream pipeline (line assignment, lowering, emission) works unchanged.
+
+Views available:
+- **Full** — lossless rendering of the entire ancestor chain
+- **Brief** — truncated overview
+- **Adaptive** — tag/grep-filtered, preserving conversation structure
+- **Transposed** — flat list of matches sorted by depth, for cross-tree scanning
+
+## Upstream VCC Pipeline
 
 A Claude Code JSONL like this (you can find lots of these things in your `~/.claude/projects`):
 
