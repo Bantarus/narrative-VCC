@@ -1,0 +1,5 @@
+{"type":"scene","id":"s001","content":"The tavern falls silent as you enter.","tags":["loc:crow_tavern","time:night","arc:act1"]}
+{"type":"_agent_heartbeat","ts":"2026-01-01T00:00:00Z"}
+{"type":"npc_dialogue","id":"d001","speaker":"Marcus","content":"You shouldn't be here.","disposition":"neutral","tags":["npc:marcus","arc:marcus_conflict"]}
+{"type":"player_choice","id":"c001","prompt":"How do you respond?","options":["Apologize","Threaten","Leave"],"chosen":null,"tags":["choice:confrontation"]}
+{"type":"branch_point","id":"bp001","children":["act1_fork_a","act1_fork_b"],"taken":"act1_fork_b"}

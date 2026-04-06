@@ -1,0 +1,9 @@
+{"type":"scene","id":"s020","content":"You step forward, eyes locked on Marcus. 'Try me.'","tags":["loc:crow_tavern","arc:act1"]}
+{"type":"_agent_heartbeat","ts":"2026-01-01T00:02:00Z"}
+{"type":"npc_dialogue","id":"d020","speaker":"Marcus","content":"So be it.","disposition":"hostile","tags":["npc:marcus","arc:marcus_conflict"]}
+{"type":"consequence","id":"r020","content":"Marcus reaches for his sword.","tags":["npc:marcus","arc:marcus_conflict"]}
+{"type":"world_state","id":"w020","flags":{"marcus_disposition":"hostile","thieves_guild_rep":15},"delta":{"thieves_guild_rep":"+5","marcus_disposition":"neutral→hostile"}}
+{"type":"player_choice","id":"c020","prompt":"Marcus draws steel. What do you do?","options":["Fight","Flee","Call for help"],"chosen":"Flee","tags":["choice:flee"]}
+{"type":"arc_note","id":"a020","content":"Marcus was neutral in prologue. Disposition flip here. Future nodes must honor marcus_disposition:hostile","author":"narrative_agent","tags":["npc:marcus","continuity"]}
+{"type":"branch_point","id":"bp020","children":["act1_fork_b_1"],"taken":"act1_fork_b_1"}
+{"type":"_debug_trace","msg":"parser checkpoint"}

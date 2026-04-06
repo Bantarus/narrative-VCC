@@ -1,0 +1,7 @@
+{"type":"scene","id":"s030","content":"You bolt for the door. The tavern erupts behind you.","tags":["loc:crow_tavern","arc:act1"]}
+{"type":"_agent_heartbeat","ts":"2026-01-01T00:03:00Z"}
+{"type":"npc_dialogue","id":"d030","speaker":"Marcus","content":"Running won't save you!","disposition":"hostile","tags":["npc:marcus","arc:marcus_conflict"]}
+{"type":"consequence","id":"r030","content":"You burst into the alley. Marcus's footsteps echo behind you.","tags":["npc:marcus","loc:alley"]}
+{"type":"world_state","id":"w030","flags":{"marcus_disposition":"hostile","player_location":"alley","thieves_guild_rep":15,"marcus_pursuing":true},"delta":{"player_location":"crow_tavern→alley","marcus_pursuing":"false→true"}}
+{"type":"arc_note","id":"a030","content":"Player fled confrontation. Marcus pursuing. This creates a chase sequence. Honor marcus_disposition:hostile and marcus_pursuing:true in all downstream nodes.","author":"narrative_agent","tags":["npc:marcus","continuity","chase"]}
+{"type":"_scaffold","template":"chase_sequence_v2"}

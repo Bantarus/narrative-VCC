@@ -1,0 +1,6 @@
+{
+  "act1_root":     { "parent": null },
+  "act1_fork_a":   { "parent": "act1_root",   "via_choice": "Apologize" },
+  "act1_fork_b":   { "parent": "act1_root",   "via_choice": "Threaten" },
+  "act1_fork_b_1": { "parent": "act1_fork_b", "via_choice": "Flee" }
+}

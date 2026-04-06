@@ -1,0 +1,6 @@
+{"type":"scene","id":"s010","content":"You bow your head. 'I meant no offense.'","tags":["loc:crow_tavern","arc:act1"]}
+{"type":"_agent_heartbeat","ts":"2026-01-01T00:01:00Z"}
+{"type":"npc_dialogue","id":"d010","speaker":"Marcus","content":"Hmph. At least you have manners.","disposition":"softening","tags":["npc:marcus","arc:marcus_conflict"]}
+{"type":"consequence","id":"r010","content":"Marcus lowers his hand from his sword hilt.","tags":["npc:marcus"]}
+{"type":"world_state","id":"w010","flags":{"marcus_disposition":"softening","thieves_guild_rep":10},"delta":{"marcus_disposition":"neutral→softening"}}
+{"type":"arc_note","id":"a010","content":"Player chose diplomacy. Marcus softening. Future nodes may open guild quest line if rep stays above 10.","author":"narrative_agent","tags":["npc:marcus","continuity"]}
