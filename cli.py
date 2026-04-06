@@ -15,7 +15,9 @@ import re
 import sys
 
 from narrative.pipeline import NarrativePipeline
-from narrative.path_resolver import PathResolver
+from narrative.path_resolver import (
+    PathResolver, NodeNotFoundError, NodeFileMissingError, CycleDetectedError,
+)
 from narrative.tag_index import TagIndex
 from narrative.views import render_ui_view, render_adaptive_view, render_transposed_view
 
@@ -229,7 +231,31 @@ def main():
         "search": cmd_search,
         "inspect": cmd_inspect,
     }
-    commands[args.command](args)
+
+    try:
+        commands[args.command](args)
+    except NodeNotFoundError as e:
+        node_id = str(e).strip("'\"")
+        tree = _tree_root(args)
+        edges_path = os.path.join(tree, "edges.json")
+        try:
+            with open(edges_path, encoding="utf-8") as f:
+                available = sorted(json.load(f).keys())
+        except (FileNotFoundError, json.JSONDecodeError):
+            available = []
+        print(f"Error: node '{node_id}' not found in {edges_path}", file=sys.stderr)
+        if available:
+            print(f"Available nodes: {', '.join(available)}", file=sys.stderr)
+        sys.exit(1)
+    except NodeFileMissingError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except CycleDetectedError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    except FileNotFoundError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
